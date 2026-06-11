@@ -13,7 +13,7 @@ _Add a screenshot here after running the app (`docs/screenshot.png`)._
 ## Getting started
 
 ```bash
-git clone https://github.com/yourname/swiss-parcel-quickcheck
+git clone https://github.com/javangerhunt/swiss-parcel-quickcheck
 cd swiss-parcel-quickcheck
 npm install
 npm run dev
