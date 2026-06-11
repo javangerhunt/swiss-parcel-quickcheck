@@ -1,101 +1,158 @@
-import Image from "next/image";
+'use client';
+
+import dynamic from 'next/dynamic';
+import { useRef, useState } from 'react';
+import type { FlyTarget } from '@/components/Map';
+import { SearchBar } from '@/components/SearchBar';
+import { ParcelPanel } from '@/components/ParcelPanel';
+import { WatchlistPanel } from '@/components/WatchlistPanel';
+import { CompareModal } from '@/components/CompareModal';
+import { useParcelData } from '@/hooks/useParcelData';
+import { useDenkmalschutz } from '@/hooks/useDenkmalschutz';
+import { useWatchlist } from '@/hooks/useWatchlist';
+import type { SearchResult, WatchlistEntry } from '@/types/parcel';
+
+// Leaflet needs `window`, so the map is only rendered client-side.
+const MapView = dynamic(() => import('@/components/Map'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
+      Karte wird geladen…
+    </div>
+  ),
+});
+
+type SidebarTab = 'parcel' | 'watchlist';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const { status, parcel, zone, error, loadParcel } = useParcelData();
+  const denkmalStatus = useDenkmalschutz(parcel?.lv95 ?? null);
+  const { watchlist, add, remove, updateNotes, isStarred } = useWatchlist();
+  const [activeTab, setActiveTab] = useState<SidebarTab>('parcel');
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [flyTarget, setFlyTarget] = useState<FlyTarget | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lon: number } | null>(null);
+  const flyKey = useRef(0);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const flyTo = (lat: number, lon: number) => {
+    setFlyTarget({ lat, lon, zoom: 17, key: ++flyKey.current });
+  };
+
+  const handleMapClick = (lat: number, lon: number) => {
+    setSelectedPoint({ lat, lon });
+    setActiveTab('parcel');
+    loadParcel(lat, lon);
+  };
+
+  const handleSearchSelect = (result: SearchResult) => {
+    setSelectedPoint({ lat: result.lat, lon: result.lon });
+    setActiveTab('parcel');
+    flyTo(result.lat, result.lon);
+    loadParcel(result.lat, result.lon);
+  };
+
+  const handleWatchlistFlyTo = (entry: WatchlistEntry) => {
+    setCompareOpen(false);
+    setSelectedPoint({ lat: entry.lat, lon: entry.lon });
+    setActiveTab('parcel');
+    flyTo(entry.lat, entry.lon);
+    loadParcel(entry.lat, entry.lon);
+  };
+
+  const handleToggleStar = () => {
+    if (!parcel) return;
+    if (isStarred(parcel.egrid)) {
+      remove(parcel.egrid);
+    } else {
+      add({
+        egrid: parcel.egrid,
+        label: parcel.label,
+        areaM2: parcel.areaM2,
+        zone: zone ?? 'Zone n/a',
+        lat: parcel.lat,
+        lon: parcel.lon,
+        denkmalschutz:
+          denkmalStatus === 'isos' || denkmalStatus === 'kgs' || denkmalStatus === 'both',
+        addedAt: new Date().toISOString(),
+      });
+    }
+  };
+
+  const tabClass = (tab: SidebarTab) =>
+    `flex-1 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+      activeTab === tab
+        ? 'border-gray-900 text-gray-900'
+        : 'border-transparent text-gray-400 hover:text-gray-600'
+    }`;
+
+  return (
+    <div className="flex h-dvh flex-col">
+      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+        <h1 className="text-base font-semibold text-gray-900">
+          🏠 Swiss Parcel Quick-Check
+        </h1>
+        <button
+          type="button"
+          onClick={() => setActiveTab('watchlist')}
+          className="text-sm text-gray-500 hover:text-gray-900"
+        >
+          Watchlist ({watchlist.length}) ★
+        </button>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="relative min-h-0 flex-1">
+          <SearchBar onSelect={handleSearchSelect} />
+          <MapView
+            onSelectPoint={handleMapClick}
+            flyTarget={flyTarget}
+            parcelGeometry={parcel?.geometryWgs84 ?? null}
+            parcelKey={parcel?.egrid ?? 'none'}
+            selectedPoint={selectedPoint}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <aside className="flex max-h-[45dvh] w-full flex-col border-t border-gray-200 bg-white md:max-h-none md:w-96 md:border-l md:border-t-0">
+          <nav className="flex shrink-0 border-b border-gray-200">
+            <button type="button" onClick={() => setActiveTab('parcel')} className={tabClass('parcel')}>
+              Parzelle
+            </button>
+            <button type="button" onClick={() => setActiveTab('watchlist')} className={tabClass('watchlist')}>
+              Watchlist ({watchlist.length})
+            </button>
+          </nav>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {activeTab === 'parcel' ? (
+              <ParcelPanel
+                status={status}
+                parcel={parcel}
+                zone={zone}
+                error={error}
+                denkmalStatus={denkmalStatus}
+                starred={parcel ? isStarred(parcel.egrid) : false}
+                onToggleStar={handleToggleStar}
+              />
+            ) : (
+              <WatchlistPanel
+                entries={watchlist}
+                onFlyTo={handleWatchlistFlyTo}
+                onRemove={remove}
+                onUpdateNotes={updateNotes}
+                onOpenCompare={() => setCompareOpen(true)}
+              />
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {compareOpen && (
+        <CompareModal
+          entries={watchlist}
+          onClose={() => setCompareOpen(false)}
+          onFlyTo={handleWatchlistFlyTo}
+        />
+      )}
     </div>
   );
 }
