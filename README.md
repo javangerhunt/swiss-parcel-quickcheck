@@ -1,9 +1,9 @@
 # Swiss Parcel Quick-Check
 
 > Click any spot on a map of Switzerland and instantly learn everything that
-> matters about that piece of land — its planning zone, its size in m², its
-> official EGRID identifier, whether it is under heritage protection — record who
-> owns it, and export the whole shortlist as a spreadsheet.
+> matters about that piece of land: its planning zone, its size in m², its
+> official EGRID identifier, and whether it is under heritage protection. Record
+> who owns it, and export the whole shortlist as a spreadsheet.
 
 Built as a personal research tool for real-estate **acquisition** work, with a
 focus on Canton Zug.
@@ -16,10 +16,10 @@ Open the app, and you see an interactive map of Switzerland. From there you can:
 
 - **Find a parcel** by clicking it on the map, or by searching for an address, a
   parcel number (`<municipality> <number>`, e.g. `Hünenberg 1234`) or an EGRID.
-- **Read its key facts instantly** — building/planning zone, exact area in m²,
+- **Read its key facts instantly**: building/planning zone, exact area in m²,
   EGRID, the municipality, and a direct link to the official cantonal Geoportal
   and the ÖREB cadastre PDF extract.
-- **See heritage-protection warnings** — a badge tells you if the parcel sits in a
+- **See heritage-protection warnings**: a badge tells you if the parcel sits in a
   nationally protected townscape (ISOS) or holds a listed cultural property (KGS).
 - **Record the owner** of each parcel, reusing owners you have already entered so
   the same person/company stays consistent across parcels.
@@ -28,14 +28,14 @@ Open the app, and you see an interactive map of Switzerland. From there you can:
   side-by-side, and **export everything to CSV or Excel**.
 - **Measure** distances and areas directly on the map.
 
-No login, no account, no API key — it runs entirely on free, public Swiss federal
+No login, no account, no API key. It runs entirely on free, public Swiss federal
 map data (geo.admin.ch / swisstopo).
 
 ---
 
 ## Why I built it
 
-I currently work in the real-estate industry in **acquisition** — my job is
+I currently work in the real-estate industry in **acquisition**: my job is
 finding and securing new properties. A normal feasibility check on a parcel means
 opening several different tools: a cantonal geoportal to find the zone, the
 federal cadastre for the EGRID and ÖREB restrictions, separate inventories to
@@ -48,20 +48,20 @@ click-and-record workflow. Concretely, it helps because:
 - **It turns map research directly into an outreach list.** Acquisition is
   ultimately about contacting the *owner*. Being able to attach an owner to each
   parcel and then export a consolidated owner list means my map research becomes
-  the contact list I actually work from — no re-typing into a separate sheet.
+  the contact list I actually work from, with no re-typing into a separate sheet.
 - **It answers the first three questions of any deal in seconds.** Is it
   buildable (zone)? How big is it (m² / ha)? Is it encumbered or protected
   (ÖREB / ISOS / KGS)? Surfacing these instantly lets me screen and rank
   opportunities far faster, and drop the non-starters early.
 - **It keeps everything in one place.** Instead of scattered tabs and
-  spreadsheets, every parcel I'm tracking — with its zone, area, owner,
-  protection status and my own notes — lives on one watchlist that persists
+  spreadsheets, every parcel I'm tracking, with its zone, area, owner,
+  protection status and my own notes, lives on one watchlist that persists
   between sessions.
 - **Its output plugs into how I already work.** One-click CSV/Excel export means
   a shortlist can go straight into existing deal-tracking tools or be shared with
   colleagues.
 - **It costs nothing and uploads nothing.** It uses only free public federal
-  data, and the watchlist stays in my own browser — so a sensitive list of
+  data, and the watchlist stays in my own browser, so a sensitive list of
   acquisition targets is never sent to any server.
 
 ---
@@ -72,7 +72,7 @@ Checking the basic facts of a Swiss parcel today means manually cross-referencin
 several public systems that don't talk to each other, then copying the results
 into your own notes. Swiss Parcel Quick-Check unifies those scattered lookups into
 one map-based interface and adds the one thing the official tools don't: a place
-to record the **owner** and export a working **shortlist** — exactly what
+to record the **owner** and export a working **shortlist**, exactly what
 acquisition work needs.
 
 ---
@@ -94,7 +94,7 @@ npm install
 npm run dev
 ```
 
-Now open **http://localhost:3000** in your web browser — the app is running.
+Now open **http://localhost:3000** in your web browser, and the app is running.
 
 To stop it, press `Ctrl+C` in the terminal. (If port 3000 is already in use, Next.js
 will tell you and offer the next free port, e.g. http://localhost:3001.)
@@ -112,7 +112,7 @@ will tell you and offer the next free port, e.g. http://localhost:3001.)
   satellite imagery (swisstopo SWISSIMAGE).
 - A toggleable **building-zone overlay** (`ch.are.bauzonen`) to scan a whole
   neighbourhood's zoning at a glance.
-- **Official ÖREB-Kataster PDF extract** per parcel — one click opens the cantonal
+- **Official ÖREB-Kataster PDF extract** per parcel: one click opens the cantonal
   extract with all public-law restrictions (supported in 20 cantons incl. ZG and
   ZH; the button is hidden where the canton publishes no standard webservice).
 - **Owner management**: record the owner of each parcel, with a colour tag and a
@@ -144,33 +144,33 @@ will tell you and offer the next free port, e.g. http://localhost:3001.)
 ## Why these technologies
 
 This is a small, self-contained front-end app with no server of its own. The stack
-was chosen to keep it that way — free, key-less, and runnable by anyone who clones
-it:
+was chosen to keep it that way, staying free, key-less, and runnable by anyone who
+clones it:
 
-- **Next.js 14 + React (App Router)** — a modern, widely-used React framework. It
+- **Next.js 14 + React (App Router)**: a modern, widely-used React framework. It
   gives a clean project structure (components, hooks, pages) and a one-command dev
   server, and it deploys for free on Vercel. React lets the UI update reactively as
   data arrives from the map APIs.
-- **TypeScript** — typed JavaScript. The types (see `types/parcel.ts`) document the
+- **TypeScript**: typed JavaScript. The types (see `types/parcel.ts`) document the
   exact shape of the data coming back from the federal APIs and catch mistakes
-  before the app runs — valuable when juggling many fields per parcel.
-- **Leaflet + react-leaflet** — **Leaflet is the interactive-map engine**: it is a
+  before the app runs. That is valuable when juggling many fields per parcel.
+- **Leaflet + react-leaflet**: **Leaflet is the interactive-map engine**, a
   free, open-source JavaScript map library (the open alternative to the Google Maps
   API). The whole app is built around *clicking a point on a map of Switzerland*,
   and Leaflet is what makes that possible. It does three jobs here: it **displays
   the swisstopo map tiles** (grayscale, colour, satellite and the zoning overlay)
   and handles all the panning and zooming; it **reports where the user clicked** as
   real-world coordinates, which is the trigger for every lookup; and it **draws the
-  results back onto the map** — the parcel outline, the selection marker, and the
+  results back onto the map**: the parcel outline, the selection marker, and the
   measurement tool. It was chosen over Google Maps specifically because it needs
-  **no API key, no account, and no billing** — which is what lets this app be
+  **no API key, no account, and no billing**, which is what lets this app be
   "clone, install, run". `react-leaflet` simply lets Leaflet be used as React
   components.
-- **proj4** — converts coordinates between WGS84 (what the map and GPS use) and the
+- **proj4**: converts coordinates between WGS84 (what the map and GPS use) and the
   Swiss LV95 grid (what the federal APIs and the area calculation use). Doing this
   in the browser avoids needing a backend.
-- **xlsx** — generates the Excel export file directly in the browser.
-- **Tailwind CSS** — utility-based styling, kept in the markup so the app needs no
+- **xlsx**: generates the Excel export file directly in the browser.
+- **Tailwind CSS**: utility-based styling, kept in the markup so the app needs no
   separate design system.
 
 ---
@@ -198,13 +198,13 @@ is no backend and nothing to sign up for.
 - **Zone data is the harmonized federal category, not the detailed cantonal zone.**
   The app shows the `ch.are.bauzonen` category (e.g. "Wohnzonen", "Zentrumszonen")
   rather than the precise cantonal designation (e.g. "W2"). Parcels outside
-  building zones (agricultural land etc.) show "Daten nicht verfügbar — Geoportal
-  prüfen"; check the cantonal Geoportal for the exact zone.
+  building zones (agricultural land etc.) show a "Daten nicht verfügbar" note;
+  check the cantonal Geoportal for the exact zone.
 - **ISOS/KGS are national-level inventories only.** Cantonal and communal
-  Denkmalschutz registers are *not* checked — a green "Kein Denkmalschutz" badge
+  Denkmalschutz registers are *not* checked. A green "Kein Denkmalschutz" badge
   does not rule out cantonal protection. Always verify in the cantonal Geoportal
   before a transaction.
-- The watchlist lives in your browser's `localStorage` — it does not sync across
+- The watchlist lives in your browser's `localStorage`; it does not sync across
   devices.
 - **ÖREB extracts are served by cantonal webservices** of varying speed and
   availability; generating the PDF can take up to ~30 seconds. Cantons without a
@@ -215,7 +215,7 @@ is no backend and nothing to sign up for.
 ## Tech stack
 
 Next.js 14 (App Router) · TypeScript · Tailwind CSS · Leaflet / react-leaflet ·
-proj4 · xlsx — deployable on the Vercel free tier.
+proj4 · xlsx. Deployable on the Vercel free tier.
 
 ## Project structure
 
