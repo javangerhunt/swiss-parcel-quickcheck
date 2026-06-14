@@ -1,5 +1,33 @@
 'use client';
 
+/**
+ * Map
+ * ---
+ * The interactive Leaflet map at the centre of the app. It renders Swiss
+ * national base maps from swisstopo (a plain colour map and aerial imagery),
+ * optional overlays (all cadastral parcel boundaries, and harmonized building
+ * zones / "Bauzonen"), the outline of the currently selected parcel (red), the
+ * outlines of a chosen owner's saved parcels (coloured by owner), and a built-in
+ * distance / area measurement tool.
+ *
+ * How it talks to the rest of the app:
+ *   - A plain click on the map reports the clicked point up via `onSelectPoint`,
+ *     which the parent uses to look up the parcel there.
+ *   - The parent can drive the map back by passing a `flyTarget` (zoom to a
+ *     point) or an `ownerFocus` (zoom to fit all of one owner's parcels).
+ *
+ * Leaflet keeps its own map state internally, so the small helper components
+ * below (FlyTo, OwnerFocuser, etc.) exist only to bridge React props to imperative
+ * Leaflet calls via the `useMap()` hook. They render nothing (`return null`).
+ *
+ * Coordinate note: Leaflet works in WGS84 latitude/longitude (the usual GPS
+ * system), but Swiss areas/distances must be measured in LV95, the metric Swiss
+ * national grid (easting/northing in metres). The measurement helpers therefore
+ * convert each point to LV95 first (wgs84ToLV95) before computing metres.
+ *
+ * 'use client': a browser-only component (Leaflet needs the DOM / `window`).
+ */
+
 import { useEffect, useState } from 'react';
 import {
   CircleMarker,
@@ -119,6 +147,12 @@ const PARCEL_PANE_STYLES: Record<Exclude<ParcelLineStyle, null>, Partial<CSSStyl
   },
 };
 
+/**
+ * Applies the CSS filter/blend-mode recipe (see PARCEL_PANE_STYLES) to the
+ * Leaflet pane that holds the cadastral parcel-boundary tiles, so the raw layer
+ * is reduced to clean boundary lines suited to the current base map. Renders
+ * nothing; it only reaches into Leaflet's pane element via useMap().
+ */
 function ParcelPaneStyler({ mode }: { mode: ParcelLineStyle }) {
   const map = useMap();
   useEffect(() => {
@@ -173,6 +207,7 @@ interface MapProps {
   ownerFocus: OwnerFocus | null;
 }
 
+/** Listens for map clicks and forwards the clicked WGS84 lat/lon to `onClick`. */
 function ClickHandler({ onClick }: { onClick: (lat: number, lon: number) => void }) {
   useMapEvents({
     click: (event) => onClick(event.latlng.lat, event.latlng.lng),
@@ -180,6 +215,11 @@ function ClickHandler({ onClick }: { onClick: (lat: number, lon: number) => void
   return null;
 }
 
+/**
+ * Smoothly animates the map to `target` whenever a new one arrives. The effect
+ * depends on `target.key` (a counter the parent bumps each time) rather than the
+ * coordinates, so re-selecting the very same spot still re-triggers the fly-to.
+ */
 function FlyTo({ target }: { target: FlyTarget | null }) {
   const map = useMap();
   useEffect(() => {
@@ -219,6 +259,11 @@ function MeasureCursor({ active }: { active: boolean }) {
   return null;
 }
 
+/**
+ * Keeps Leaflet's maximum zoom in sync with the active base layer (the colour
+ * map and the satellite imagery allow different maximum zoom levels). If the
+ * current zoom is now too deep for the new layer, it zooms back out to the limit.
+ */
 function MaxZoomUpdater({ maxZoom }: { maxZoom: number }) {
   const map = useMap();
   useEffect(() => {
@@ -228,6 +273,12 @@ function MaxZoomUpdater({ maxZoom }: { maxZoom: number }) {
   return null;
 }
 
+/**
+ * The map component itself. Holds only view state local to the map (chosen base
+ * layer, whether the boundary/zone overlays are shown, and the live measurement
+ * mode and its points); all parcel/owner data comes in via props. Renders the
+ * Leaflet map plus the floating control toolbars and the measurement readout.
+ */
 export default function Map({
   onSelectPoint,
   flyTarget,

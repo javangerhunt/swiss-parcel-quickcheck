@@ -1,3 +1,9 @@
+/**
+ * Frontend client for the ÖREB cantonal cadastre, via the backend's /exact-zone
+ * endpoint. Provides the precise cantonal land-use zone(s) for a parcel (e.g.
+ * "Wohnzone 2") with each zone's share of the parcel, plus a small formatter. The
+ * fetching and parsing of the ÖREB extract happens in the FastAPI backend.
+ */
 import { apiGet } from '@/lib/apiClient';
 
 /** A precise cantonal land-use zone and the share of the parcel it covers. */

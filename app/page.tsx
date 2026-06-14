@@ -1,5 +1,39 @@
 'use client';
 
+/**
+ * Home — the single page and central orchestrator of the whole app.
+ *
+ * This is the only real "page" in the Next.js app. It owns the high-level state
+ * and wires every piece together: the map, the search bar, the four side panels
+ * (parcel details, watchlist, owner list, area search) and the compare modal.
+ * The visual building blocks and the data-fetching logic live elsewhere; this
+ * file decides WHAT is shown and HOW the parts react to each other.
+ *
+ * Where the state comes from (custom hooks):
+ *   - useParcelData    : loads the parcel at a clicked/searched point (status +
+ *                        data + the harmonized federal zone).
+ *   - useDenkmalschutz : checks national heritage inventories (ISOS / KGS) for
+ *                        that parcel. ISOS = protected townscapes, KGS = cultural
+ *                        property objects.
+ *   - useExactZone     : fetches the precise cantonal zone from the OEREB cadastre
+ *                        (OEREB = the public-law restrictions register); slower,
+ *                        so it arrives separately.
+ *   - useWatchlist     : the user's saved parcels, persisted in the browser
+ *                        (localStorage), with add/remove/comment helpers.
+ *
+ * Two recurring patterns worth knowing while reading this file:
+ *   1) Panel switching: a single `panel` state string ('none' | 'parcel' |
+ *      'watchlist' | 'owners' | 'search') decides which sidebar is open; the JSX
+ *      near the bottom renders exactly one panel based on it.
+ *   2) "Fly" / "focus" triggers: to animate the map we pass it an object carrying
+ *      a monotonically increasing `key`. Bumping the key re-triggers the map's
+ *      effect even when the coordinates are identical (React would otherwise skip
+ *      an unchanged value).
+ *
+ * 'use client': this page runs in the browser (it uses React state, effects and
+ * the Leaflet map).
+ */
+
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FlyTarget, OwnerFocus, OwnerShape } from '@/components/Map';
@@ -29,6 +63,9 @@ const MapView = dynamic(() => import('@/components/Map'), {
   ),
 });
 
+// The identity of the side panel currently open (or 'none' for just the map).
+// A string union (rather than free text) lets TypeScript guarantee every place
+// that reads/writes `panel` uses one of these exact values.
 type PanelId = 'none' | 'parcel' | 'watchlist' | 'owners' | 'search';
 
 export default function Home() {
@@ -50,21 +87,32 @@ export default function Home() {
   // Which side panel is open. 'none' keeps the map full-width; the parcel
   // panel opens on a map click / search, the watchlist via the header button.
   const [panel, setPanel] = useState<PanelId>('none');
-  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false); // is the compare modal open?
+  // The current "fly the map here" request (null = no pending animation). The map
+  // animates whenever this object's `key` changes (see flyTo below).
   const [flyTarget, setFlyTarget] = useState<FlyTarget | null>(null);
+  // The point the user last clicked/selected, drawn as a red dot on the map.
   const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lon: number } | null>(null);
+  // Ever-increasing counter so two consecutive fly-to's to the same coordinates
+  // still produce two distinct `key`s and therefore two animations.
   const flyKey = useRef(0);
 
+  // Ask the map to smoothly pan/zoom to a point. Bumping flyKey guarantees a new
+  // `key`, which is what the map watches to (re)trigger the animation.
   const flyTo = (lat: number, lon: number) => {
     setFlyTarget({ lat, lon, zoom: 17, key: ++flyKey.current });
   };
 
+  // A plain click on the map: remember the point, open the parcel panel and look
+  // up the parcel that lies under the click.
   const handleMapClick = (lat: number, lon: number) => {
     setSelectedPoint({ lat, lon });
     setPanel('parcel');
     loadParcel(lat, lon);
   };
 
+  // Picking a point result from the search box: like a map click, but we also
+  // fly the map to the chosen location first.
   const handleSearchSelect = (result: SearchResult) => {
     setSelectedPoint({ lat: result.lat, lon: result.lon });
     setPanel('parcel');
@@ -72,9 +120,13 @@ export default function Home() {
     loadParcel(result.lat, result.lon);
   };
 
+  // The active "search every parcel in this area" request (null = none yet).
   const [areaSearch, setAreaSearch] = useState<AreaSearchRequest | null>(null);
-  const areaKeyRef = useRef(0);
+  const areaKeyRef = useRef(0); // counter so re-searching the same area re-runs it
 
+  // Picking a Gemeinde/Ort area + filters from the search box: kick off the area
+  // search panel for that bounding box, and fly the map to the area's centre.
+  // (Gemeinde = Swiss political municipality.)
   const handleSelectArea = (result: SearchResult, filters: AreaFilters) => {
     if (!result.bbox) return;
     setAreaSearch({
@@ -87,6 +139,8 @@ export default function Home() {
     flyTo(result.lat, result.lon);
   };
 
+  // Clicking a saved parcel anywhere (watchlist, owner list, compare modal):
+  // close the modal if open, then open and load that parcel like a normal click.
   const handleWatchlistFlyTo = (entry: WatchlistEntry) => {
     setCompareOpen(false);
     setSelectedPoint({ lat: entry.lat, lon: entry.lon });
@@ -120,6 +174,8 @@ export default function Home() {
     };
   };
 
+  // Star button: if already saved, remove it; otherwise build a fresh watchlist
+  // entry from the loaded parcel and add it.
   const handleToggleStar = () => {
     if (!parcel) return;
     if (isStarred(parcel.egrid)) {
@@ -248,6 +304,9 @@ export default function Home() {
     [ownerLegend]
   );
 
+  // Which owner's parcels are highlighted + zoomed-to on the map (null = none).
+  // Like flyTarget, it carries a bumping `key` so re-selecting the same owner
+  // re-triggers the map's "fit to all their parcels" animation.
   const [ownerFocus, setOwnerFocus] = useState<OwnerFocus | null>(null);
   const focusKeyRef = useRef(0);
   const handleFocusOwner = (key: string) => {
@@ -267,6 +326,8 @@ export default function Home() {
   const currentOwnerColor =
     (currentOwnerKey && ownerGroups.get(currentOwnerKey)?.color) || null;
 
+  // Heading shown at the top of the open side panel (with a live count where it
+  // makes sense), chosen from the active `panel`.
   const panelTitle =
     panel === 'watchlist'
       ? `Watchlist (${watchlist.length})`
@@ -398,6 +459,9 @@ export default function Home() {
             </button>
           </div>
 
+          {/* Panel switch: render exactly one panel's body based on `panel`.
+              Each panel is fed the relevant slice of state plus the callbacks it
+              needs to report user actions back up to this orchestrator. */}
           <div className="scroll-slim min-h-0 flex-1 overflow-y-auto p-4">
               {panel === 'search' ? (
                 <AreaSearchPanel

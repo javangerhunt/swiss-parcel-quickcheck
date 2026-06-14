@@ -1,3 +1,17 @@
+/**
+ * Owner helpers for the watchlist: turning owner details into text and grouping
+ * watchlist parcels by who owns them.
+ *
+ * A user can record an owner for each saved parcel, either as free text or as
+ * structured fields (name, address, phone, email). An owner may be a person, a
+ * company, or a public body such as a Gemeinde (the Swiss term for a
+ * municipality / local commune). This file does three things:
+ *   - convert structured owner details to and from a single multi-line string;
+ *   - derive a stable "grouping key" so parcels with the same owner cluster
+ *     together even if the text was typed with different spacing/casing;
+ *   - assign each distinct owner a colour, so parcels owned by the same party
+ *     can be drawn in the same colour on the map and in the watchlist.
+ */
 import type { OwnerInfo, WatchlistEntry } from '@/types/parcel';
 
 /** Serializes structured owner details to the canonical multi-line string
@@ -60,6 +74,7 @@ export function ownerKey(owner?: string): string | null {
   return name ? name.toLowerCase().replace(/\s+/g, ' ') : null;
 }
 
+/** One owner cluster: all watchlist parcels sharing the same grouping key. */
 export interface OwnerGroup {
   key: string;
   /** First line of the owner field — the display name. */

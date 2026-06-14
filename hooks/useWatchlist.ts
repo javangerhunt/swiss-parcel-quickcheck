@@ -26,14 +26,24 @@ function migrateEntry(entry: WatchlistEntry): WatchlistEntry {
   };
 }
 
+/** Saves the watchlist to localStorage, ignoring quota / availability errors. */
 function persist(entries: WatchlistEntry[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   } catch {
-    // Storage full or unavailable — the in-memory list still works.
+    // Storage full or unavailable: the in-memory list still works.
   }
 }
 
+/**
+ * Manages the user's saved-parcel "watchlist", persisted in the browser's
+ * localStorage (key `parcel-watchlist-v1`) so it survives page reloads. There is
+ * no backend and no account: the list lives only in this browser.
+ *
+ * Returns the in-memory list plus the operations the UI needs: add / remove a
+ * parcel, patch an entry (owner, geometry, zone, ...), add / edit / remove the
+ * per-parcel comments, and the small lookups isStarred / getEntry.
+ */
 export function useWatchlist() {
   const [watchlist, setWatchlist] = useState<WatchlistEntry[]>([]);
 

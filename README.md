@@ -267,6 +267,10 @@ Vercel free tier; the backend runs as a small Python service.
 
 ## Project structure
 
+For a full guided walkthrough of the whole system (data flow, the request
+lifecycle of a map click, a per-module tour and a complete file map), see
+[ARCHITECTURE.md](./ARCHITECTURE.md).
+
 ```
 backend/     FastAPI Python backend: Swiss API calls, coordinate maths, area search
 app/         Next.js pages and global layout (the entry point and overall page)

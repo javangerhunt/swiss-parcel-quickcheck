@@ -82,6 +82,11 @@ async def search_area(
 
     # Step 3: cheap year pre-filter before any per-parcel network calls.
     def passes_year(p: Dict[str, Any]) -> bool:
+        """
+        True if the parcel's construction year falls inside the requested
+        min/max year window. A parcel with no recorded baujahr fails whenever a
+        year bound is active.
+        """
         baujahr = p["baujahr"]
         if min_year is not None and (baujahr is None or baujahr < min_year):
             return False

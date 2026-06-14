@@ -1,3 +1,25 @@
+/*
+ * globals.css — the single global stylesheet, loaded once in app/layout.tsx and
+ * applied across the whole app.
+ *
+ * What it sets up, top to bottom:
+ *   1. The three @tailwind directives, which pull in Tailwind's generated CSS
+ *      in its layered order: `base` (resets + element defaults), `components`
+ *      (our reusable class shortcuts) and `utilities` (Tailwind's atomic classes).
+ *   2. Full-height html/body and a few page-wide base styles (text colour,
+ *      background, font smoothing).
+ *   3. @layer base — a consistent keyboard focus ring on all interactive elements.
+ *   4. @layer components — reusable class shortcuts built from Tailwind utilities
+ *      via @apply (buttons: .btn / .btn-primary / .btn-secondary / .btn-ghost,
+ *      form inputs: .field, section labels: .eyebrow). Components reference these
+ *      class names instead of repeating long utility lists.
+ *   5. @layer utilities — a slim custom scrollbar helper (.scroll-slim).
+ *   6. Plain (unlayered) rules for the Leaflet map: a washed-out base-map filter
+ *      (.tiles-muted) and the crosshair/move cursors used while measuring.
+ *
+ * Putting custom rules in the matching @layer keeps Tailwind's intended cascade
+ * order, so a utility class can still override a component class when needed.
+ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

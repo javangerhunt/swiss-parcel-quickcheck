@@ -1,3 +1,20 @@
+/**
+ * Tailwind CSS configuration.
+ *
+ * This file customises Tailwind, the utility-class styling system the UI is
+ * built with. It does three things:
+ *  - `content`: tells Tailwind which files to scan for class names so it only
+ *    ships the CSS actually used (the app/, components/ and pages/ folders).
+ *  - `theme.extend.colors`: defines the app's custom colour palette on top of
+ *    Tailwind's defaults: `canvas` (the page background), the neutral `ink`
+ *    scale (text, borders, muted surfaces) and the `brand` blue accent. These
+ *    names are what classes like `bg-brand-600` or `text-ink-900` resolve to.
+ *  - the rest of `theme.extend`: the app fonts (wired to the CSS variables set
+ *    in app/layout.tsx), a set of soft elevation shadows for floating panels,
+ *    and a couple of rounded-corner sizes.
+ *
+ * No Tailwind plugins are used (`plugins: []`).
+ */
 import type { Config } from "tailwindcss";
 
 const config: Config = {

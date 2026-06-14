@@ -1,11 +1,10 @@
-import { apiGet } from '@/lib/apiClient';
-import type { ParcelInfo, SearchResult } from '@/types/parcel';
-
 /**
  * Thin clients for the FastAPI backend. All geo.admin.ch / GWR / ÖREB logic now
  * lives in the backend; these functions just call the corresponding `/api`
  * endpoints and pass the responses through with the right types.
  */
+import { apiGet } from '@/lib/apiClient';
+import type { ParcelInfo, SearchResult } from '@/types/parcel';
 
 /** Address / parcel search — proxied to the backend SearchServer wrapper. */
 export async function searchLocations(

@@ -1,3 +1,10 @@
+/**
+ * Typed frontend client for the backend's /area-search endpoint, plus the shared
+ * filter / result types and the list of zone categories offered in the filter UI.
+ * The actual area search (scanning the building register and resolving each
+ * parcel's area and zone) runs in the FastAPI backend; searchArea here just
+ * forwards the bounding box and filters and returns the typed result.
+ */
 import { apiGet } from '@/lib/apiClient';
 
 export interface AreaFilters {
