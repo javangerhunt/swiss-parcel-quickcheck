@@ -8,12 +8,91 @@ body {
 }
 
 body {
-  color: #171717;
-  background: #ffffff;
+  color: #171b21;
+  background: #f6f7f9;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  /* A single, consistent keyboard-focus ring across every interactive
+     element. Mouse clicks stay clean (focus-visible only). */
+  :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px #ffffff,
+      0 0 0 4px #3b66f0;
+    border-radius: 0.5rem;
+  }
+}
+
+@layer components {
+  /* ---- Buttons ---------------------------------------------------------- */
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap
+      rounded-lg text-sm font-medium transition-colors duration-150
+      disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800;
+  }
+  .btn-secondary {
+    @apply btn border border-ink-200 bg-white text-ink-700 shadow-sm
+      hover:border-ink-300 hover:bg-ink-50 active:bg-ink-100;
+  }
+  .btn-ghost {
+    @apply btn text-ink-500 hover:bg-ink-100 hover:text-ink-800;
+  }
+
+  /* ---- Form controls ---------------------------------------------------- */
+  .field {
+    @apply w-full rounded-lg border border-ink-200 bg-white text-sm text-ink-900
+      outline-none transition-colors duration-150 placeholder:text-ink-400
+      hover:border-ink-300 focus:border-brand-500;
+  }
+
+  /* ---- Section labels --------------------------------------------------- */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-ink-400;
+  }
+}
+
+@layer utilities {
+  /* Refined, unobtrusive scrollbars inside panels. */
+  .scroll-slim {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd0d8 transparent;
+  }
+  .scroll-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb {
+    background-color: #cbd0d8;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb:hover {
+    background-color: #9aa2af;
+  }
 }
 
 /* Washed-out base map for the "Einfach" view: roads and topo detail fade
    into a faint light-gray background so parcel lines dominate. */
 .tiles-muted {
   filter: grayscale(1) contrast(0.45) brightness(1.35);
+}
+
+/* Crosshair cursor while measuring distance / area (precise point placement),
+   even while the mouse button is down. */
+.leaflet-container.is-measuring,
+.leaflet-container.is-measuring .leaflet-grab,
+.leaflet-container.is-measuring .leaflet-interactive,
+.leaflet-container.is-measuring.leaflet-dragging .leaflet-grab {
+  cursor: crosshair !important;
+}
+/* …but the draggable measurement handles show a move cursor. */
+.leaflet-container.is-measuring .measure-vertex-icon {
+  cursor: move !important;
 }

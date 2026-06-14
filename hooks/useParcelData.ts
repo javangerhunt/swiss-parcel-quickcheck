@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { identifyParcel, identifyZone } from '@/lib/geoAdmin';
+import { identifyParcel, identifyZone, lookupLocation, resolveLocation } from '@/lib/geoAdmin';
 import { geometryLv95ToWgs84, planarAreaM2, wgs84ToLV95 } from '@/lib/coordinates';
 import type { ParcelInfo } from '@/types/parcel';
 
@@ -25,9 +25,10 @@ export function useParcelData() {
     setError(null);
     try {
       const [easting, northing] = wgs84ToLV95(lat, lon);
-      const [parcelResult, zoneResult] = await Promise.allSettled([
+      const [parcelResult, zoneResult, locationResult] = await Promise.allSettled([
         identifyParcel(easting, northing),
         identifyZone(easting, northing),
+        lookupLocation(easting, northing),
       ]);
       if (id !== requestId.current) return; // a newer request superseded this one
 
@@ -40,6 +41,13 @@ export function useParcelData() {
         return;
       }
 
+      // Resolve the address against the parcel EGRID so it belongs to *this*
+      // parcel and not a neighbouring building within tolerance.
+      const location =
+        locationResult.status === 'fulfilled'
+          ? resolveLocation(locationResult.value, raw.egrid)
+          : { address: null, plz: null, place: null, gemeinde: null };
+
       setZone(zoneResult.status === 'fulfilled' ? zoneResult.value : null);
       setParcel({
         egrid: raw.egrid || `${raw.canton}-${raw.number}`,
@@ -49,6 +57,10 @@ export function useParcelData() {
         areaM2: raw.geometry ? Math.round(planarAreaM2(raw.geometry)) : 0,
         geoportalUrl: raw.geoportalUrl,
         geometryWgs84: raw.geometry ? geometryLv95ToWgs84(raw.geometry) : null,
+        address: location.address,
+        plz: location.plz,
+        place: location.place,
+        gemeinde: location.gemeinde,
         lat,
         lon,
         lv95: [easting, northing],
