@@ -79,8 +79,11 @@ acquisition work needs.
 
 ## How to open the app
 
-You need [**Node.js**](https://nodejs.org) installed (version 18 or newer). Then,
-in a terminal:
+The same steps work on **Windows, macOS and Linux**. You need
+[**Node.js**](https://nodejs.org) (version 18 or newer) and
+[**Git**](https://git-scm.com) installed. Then open a terminal (on Windows use
+PowerShell or Git Bash; on macOS/Linux use Terminal) and run the commands below.
+The lines starting with `#` are just explanatory comments; you can skip them.
 
 ```bash
 # 1. Get the code
