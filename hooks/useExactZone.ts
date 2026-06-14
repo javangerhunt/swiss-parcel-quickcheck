@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchExactZones, hasOerebService, type ExactZone } from '@/lib/oereb';
+import { fetchExactZones, type ExactZone } from '@/lib/oereb';
 
 export type ExactZoneStatus = 'idle' | 'loading' | 'loaded' | 'unavailable' | 'error';
 
@@ -23,10 +23,6 @@ export function useExactZone(canton: string | null, egrid: string | null): Exact
   useEffect(() => {
     if (!canton || !egrid || !egrid.startsWith('CH')) {
       setState({ status: 'idle', zones: [] });
-      return;
-    }
-    if (!hasOerebService(canton)) {
-      setState({ status: 'unavailable', zones: [] });
       return;
     }
     const controller = new AbortController();

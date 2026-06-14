@@ -1,16 +1,15 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { identifyParcel, identifyZone, lookupLocation, resolveLocation } from '@/lib/geoAdmin';
-import { geometryLv95ToWgs84, planarAreaM2, wgs84ToLV95 } from '@/lib/coordinates';
+import { fetchParcel } from '@/lib/geoAdmin';
 import type { ParcelInfo } from '@/types/parcel';
 
 export type ParcelLoadStatus = 'idle' | 'loading' | 'loaded' | 'empty' | 'error';
 
 /**
- * Loads parcel + zone data for a WGS84 point. The parcel identify and the
- * zone identify run in parallel; a failing zone lookup degrades gracefully
- * to "not available" instead of failing the whole parcel.
+ * Loads parcel + zone data for a WGS84 point. The backend resolves the parcel,
+ * its harmonized zone and the location fields in one call; a missing parcel
+ * comes back as null and degrades to the 'empty' state.
  */
 export function useParcelData() {
   const [status, setStatus] = useState<ParcelLoadStatus>('idle');
@@ -24,46 +23,36 @@ export function useParcelData() {
     setStatus('loading');
     setError(null);
     try {
-      const [easting, northing] = wgs84ToLV95(lat, lon);
-      const [parcelResult, zoneResult, locationResult] = await Promise.allSettled([
-        identifyParcel(easting, northing),
-        identifyZone(easting, northing),
-        lookupLocation(easting, northing),
-      ]);
+      const data = await fetchParcel(lat, lon);
       if (id !== requestId.current) return; // a newer request superseded this one
 
-      if (parcelResult.status === 'rejected') throw parcelResult.reason;
-      const raw = parcelResult.value;
-      if (!raw) {
+      if (!data) {
         setParcel(null);
         setZone(null);
         setStatus('empty');
         return;
       }
 
-      // Resolve the address against the parcel EGRID so it belongs to *this*
-      // parcel and not a neighbouring building within tolerance.
-      const location =
-        locationResult.status === 'fulfilled'
-          ? resolveLocation(locationResult.value, raw.egrid)
-          : { address: null, plz: null, place: null, gemeinde: null };
-
-      setZone(zoneResult.status === 'fulfilled' ? zoneResult.value : null);
+      // ParcelData is a superset of ParcelInfo (plus `zone`), so its fields map
+      // straight onto the panel state — lat, lon, lv95, oerebPdfUrl and
+      // geometryWgs84 all come from the backend response.
+      setZone(data.zone);
       setParcel({
-        egrid: raw.egrid || `${raw.canton}-${raw.number}`,
-        number: raw.number,
-        canton: raw.canton,
-        label: raw.number ? `Parzelle ${raw.number} (${raw.canton})` : raw.egrid,
-        areaM2: raw.geometry ? Math.round(planarAreaM2(raw.geometry)) : 0,
-        geoportalUrl: raw.geoportalUrl,
-        geometryWgs84: raw.geometry ? geometryLv95ToWgs84(raw.geometry) : null,
-        address: location.address,
-        plz: location.plz,
-        place: location.place,
-        gemeinde: location.gemeinde,
-        lat,
-        lon,
-        lv95: [easting, northing],
+        egrid: data.egrid,
+        number: data.number,
+        canton: data.canton,
+        label: data.label,
+        areaM2: data.areaM2,
+        geoportalUrl: data.geoportalUrl,
+        oerebPdfUrl: data.oerebPdfUrl,
+        geometryWgs84: data.geometryWgs84,
+        address: data.address,
+        plz: data.plz,
+        place: data.place,
+        gemeinde: data.gemeinde,
+        lat: data.lat,
+        lon: data.lon,
+        lv95: data.lv95,
       });
       setStatus('loaded');
     } catch (err) {

@@ -27,7 +27,6 @@ import { CommentSection } from '@/components/CommentSection';
 import { OwnerFields } from '@/components/OwnerFields';
 import { DenkmalschutzBadge } from '@/components/DenkmalschutzBadge';
 import { formatSwissNumber } from '@/lib/format';
-import { oerebPdfUrl } from '@/lib/oereb';
 import type { ParcelLoadStatus } from '@/hooks/useParcelData';
 import type {
   DenkmalStatus,
@@ -214,9 +213,9 @@ export function ParcelPanel({
   }
 
   // --- Success state: derive a few display strings -----------------------
-  // Build the link to the official ÖREB cadastre PDF (may be null if the canton
-  // isn't supported).
-  const oerebUrl = oerebPdfUrl(parcel.canton, parcel.egrid);
+  // Link to the official ÖREB cadastre PDF (computed by the backend; may be null
+  // if the canton isn't supported).
+  const oerebUrl = parcel.oerebPdfUrl;
   // Combine postal code + place into "6300 Zug" (skipping whichever is missing).
   const plzPlace = [parcel.plz, parcel.place].filter(Boolean).join(' ');
   // Title: parcel number, with address + municipality as the subtitle.

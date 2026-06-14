@@ -32,6 +32,8 @@ export interface ParcelInfo {
   label: string;
   areaM2: number;
   geoportalUrl: string | null;
+  /** Official ÖREB PDF extract URL for this parcel, or null when unavailable. */
+  oerebPdfUrl: string | null;
   /** Parcel outline in WGS84, ready for Leaflet display. */
   geometryWgs84: Geometry | null;
   /** Street address (if a building was found), postal code, place, municipality. */

@@ -16,8 +16,7 @@ import { useExactZone } from '@/hooks/useExactZone';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { buildOwnerGroups, entryOwnerInfo, ownerInfoToString, ownerKey } from '@/lib/owners';
 import { formatExactZones } from '@/lib/oereb';
-import { identifyParcel } from '@/lib/geoAdmin';
-import { geometryLv95ToWgs84, wgs84ToLV95 } from '@/lib/coordinates';
+import { fetchParcel } from '@/lib/geoAdmin';
 import type { OwnerInfo, SearchResult, WatchlistEntry } from '@/types/parcel';
 
 // Leaflet needs `window`, so the map is only rendered client-side.
@@ -188,11 +187,10 @@ export default function Home() {
       hydratedRef.current.add(entry.egrid);
       (async () => {
         try {
-          const [easting, northing] = wgs84ToLV95(entry.lat, entry.lon);
-          const raw = await identifyParcel(easting, northing);
-          if (raw?.geometry) {
+          const raw = await fetchParcel(entry.lat, entry.lon);
+          if (raw?.geometryWgs84) {
             updateEntry(entry.egrid, {
-              geometry: geometryLv95ToWgs84(raw.geometry),
+              geometry: raw.geometryWgs84,
               number: entry.number ?? raw.number,
             });
           }

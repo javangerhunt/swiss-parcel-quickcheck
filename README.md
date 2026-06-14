@@ -79,28 +79,58 @@ acquisition work needs.
 
 ## How to open the app
 
-The same steps work on **Windows, macOS and Linux**. You need
-[**Node.js**](https://nodejs.org) (version 18 or newer) and
-[**Git**](https://git-scm.com) installed. Then open a terminal (on Windows use
-PowerShell or Git Bash; on macOS/Linux use Terminal) and run the commands below.
-The lines starting with `#` are just explanatory comments; you can skip them.
+The app now has **two parts that must both run**: a Python backend (the data
+logic) and a JavaScript/React frontend (the map and UI). The same steps work on
+**Windows, macOS and Linux**. You need [**Node.js**](https://nodejs.org)
+(version 18 or newer), [**Git**](https://git-scm.com), and
+[**Python**](https://python.org) (version 3.9 or newer) installed. Then open a
+terminal (on Windows use PowerShell or Git Bash; on macOS/Linux use Terminal)
+and run the commands below. The lines starting with `#` are just explanatory
+comments; you can skip them.
+
+First, get the code:
 
 ```bash
-# 1. Get the code
 git clone https://github.com/javangerhunt/swiss-parcel-quickcheck
 cd swiss-parcel-quickcheck
+```
 
-# 2. Install the dependencies (one-time, downloads the libraries it needs)
+**Step 1: Start the backend.** In your first terminal:
+
+```bash
+# Move into the backend folder
+cd backend
+
+# Create and activate a virtual environment (one-time setup)
+python -m venv .venv
+#   macOS / Linux:
+source .venv/bin/activate
+#   Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+
+# Install the Python dependencies (one-time)
+pip install -r requirements.txt
+
+# Start the backend
+uvicorn app.main:app --port 8000
+```
+
+**Step 2: Start the frontend.** Open a **second terminal** in the project root:
+
+```bash
+# Install the dependencies (one-time, downloads the libraries it needs)
 npm install
 
-# 3. Start the app
+# Start the frontend
 npm run dev
 ```
 
 Now open **http://localhost:3000** in your web browser, and the app is running.
 
-To stop it, press `Ctrl+C` in the terminal. (If port 3000 is already in use, Next.js
-will tell you and offer the next free port, e.g. http://localhost:3001.)
+The frontend proxies its `/api` requests to the backend on port 8000, so the
+backend (Step 1) must be running for the app to work. To stop either part, press
+`Ctrl+C` in its terminal. (If port 3000 is already in use, Next.js will tell you
+and offer the next free port, e.g. http://localhost:3001.)
 
 > No environment variables, no API keys, and nothing to sign up for: clone,
 > install, run.
@@ -131,14 +161,16 @@ will tell you and offer the next free port, e.g. http://localhost:3001.)
 
 ## How it works
 
-- The click point is converted from WGS84 (lat/lon) to the Swiss LV95 grid
-  (EPSG:2056) client-side with `proj4`.
-- Parallel "identify" calls against geo.admin.ch resolve the **parcel** (number,
+- The browser sends the clicked coordinates to the FastAPI backend. The backend
+  does the heavy lifting: it converts the point from WGS84 (lat/lon) to the Swiss
+  LV95 grid (EPSG:2056), runs the geo.admin.ch lookups, computes the area, and
+  handles the OEREB cadastre work, then returns ready-to-display JSON.
+- The "identify" calls against geo.admin.ch resolve the **parcel** (number,
   EGRID, outline geometry, Geoportal link) and the **planning zone**.
-- The parcel **area** is computed client-side from the LV95 outline with a planar
-  shoelace formula (LV95 is metric, so this gives an exact result in m²).
-- Two background calls check the **ISOS** and **KGS** inventories; a warning badge
-  appears if the parcel falls inside a protected area.
+- The parcel **area** is computed from the LV95 outline with a planar shoelace
+  formula (LV95 is metric, so this gives an exact result in m²).
+- Calls to the **ISOS** and **KGS** inventories check for heritage protection; a
+  warning badge appears if the parcel falls inside a protected area.
 - **Watchlist** entries (including owner and free-text notes) are stored in the
   browser's `localStorage` and can be exported as CSV or Excel.
 
@@ -146,10 +178,20 @@ will tell you and offer the next free port, e.g. http://localhost:3001.)
 
 ## Why these technologies
 
-This is a small, self-contained front-end app with no server of its own. The stack
-was chosen to keep it that way, staying free, key-less, and runnable by anyone who
-clones it:
+The app is now a **real full-stack split**: a Python backend plus a
+JavaScript/React frontend. The backend does all the Swiss-API and geometry work,
+and the browser does the interactive Leaflet map and the UI. The stack was chosen
+to stay free, key-less, and runnable by anyone who clones it:
 
+- **FastAPI**: the Python backend framework that serves the data endpoints. It
+  gives a clean, typed way to expose the `/api` routes the frontend calls, and it
+  generates interactive API docs (at `/docs`) for free.
+- **pyproj**: Python coordinate conversion from WGS84 to the Swiss LV95 grid
+  (EPSG:2056), replacing the browser-side `proj4` for the data path. It is the
+  reference library for this kind of geodetic transformation.
+- **httpx**: the async HTTP client the backend uses to call the Swiss federal
+  APIs (geo.admin.ch and the cantonal OEREB webservices), so several lookups can
+  run concurrently.
 - **Next.js 14 + React (App Router)**: a modern, widely-used React framework. It
   gives a clean project structure (components, hooks, pages) and a one-command dev
   server, and it deploys for free on Vercel. React lets the UI update reactively as
@@ -170,8 +212,9 @@ clones it:
   "clone, install, run". `react-leaflet` simply lets Leaflet be used as React
   components.
 - **proj4**: converts coordinates between WGS84 (what the map and GPS use) and the
-  Swiss LV95 grid (what the federal APIs and the area calculation use). Doing this
-  in the browser avoids needing a backend.
+  Swiss LV95 grid in the browser, for the map-side display work. The data path
+  (the federal API lookups and the area calculation) now does this conversion in
+  the backend with `pyproj`.
 - **xlsx**: generates the Excel export file directly in the browser.
 - **Tailwind CSS**: utility-based styling, kept in the markup so the app needs no
   separate design system.
@@ -180,8 +223,9 @@ clones it:
 
 ## Data sources
 
-All data comes from **public Swiss federal APIs** (geo.admin.ch / swisstopo). There
-is no backend and nothing to sign up for.
+All data comes from **public Swiss federal APIs** (geo.admin.ch / swisstopo).
+There are no API keys and nothing to sign up for; the backend simply relays these
+public services.
 
 | Data | API | Documentation |
 |------|-----|---------------|
@@ -217,12 +261,14 @@ is no backend and nothing to sign up for.
 
 ## Tech stack
 
-Next.js 14 (App Router) · TypeScript · Tailwind CSS · Leaflet / react-leaflet ·
-proj4 · xlsx. Deployable on the Vercel free tier.
+Python · FastAPI · pyproj · httpx · Next.js 14 (App Router) · TypeScript ·
+Tailwind CSS · Leaflet / react-leaflet · proj4 · xlsx. The frontend deploys on the
+Vercel free tier; the backend runs as a small Python service.
 
 ## Project structure
 
 ```
+backend/     FastAPI Python backend: Swiss API calls, coordinate maths, area search
 app/         Next.js pages and global layout (the entry point and overall page)
 components/  The UI building blocks (map, search bar, parcel panel, watchlist, …)
 hooks/       Reusable React logic (loading parcel data, the watchlist, …)

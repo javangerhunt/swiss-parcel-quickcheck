@@ -1,0 +1,12 @@
+# Python dependencies for the Swiss Parcel Quick-Check FastAPI backend.
+#
+# fastapi          : the web framework that defines the API and validates I/O.
+# uvicorn[standard]: the ASGI server that actually runs the FastAPI app.
+# httpx            : async HTTP client used to call the geo.admin.ch and OEREB APIs.
+# pyproj           : coordinate transformations between WGS84 and the Swiss LV95 grid.
+# pydantic>=2      : data models for the response schemas (pydantic v2 is required).
+fastapi
+uvicorn[standard]
+httpx
+pyproj
+pydantic>=2
